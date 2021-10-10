@@ -15,31 +15,36 @@ class StorageManager {
     private init() {}
     
     // MARK: - TaskList
+    //сохраняем списки, вызывается автоматически один раз, когда загружаем приложение
     func save(_ taskLists: [TaskList]) {
         write {
             realm.add(taskLists)
         }
     }
     
+    //сохраняем новый список
     func save(_ taskList: TaskList) {
         write {
             realm.add(taskList)
         }
     }
     
+    //удаление
     func delete(_ taskList: TaskList) {
         write {
-            realm.delete(taskList.tasks)
-            realm.delete(taskList)
+            realm.delete(taskList.tasks) // сначала удаляем объекты из списков
+            realm.delete(taskList) // потом удаляем уже сами списки, чтобы не копить в потерянные списки в базе
         }
     }
     
+    //редактирование (вводим список, который редактируем и новое значение, которое будет ввозить пользователь)
     func edit(_ taskList: TaskList, newValue: String) {
         write {
             taskList.name = newValue
         }
     }
     
+    //помечаем задачи как выполненные у списка
     func done(_ taskList: TaskList) {
         write {
             taskList.tasks.setValue(true, forKey: "isComplete")
@@ -47,9 +52,10 @@ class StorageManager {
     }
     
     // MARK: - Tasks
+    //метод для добавления новой задачи в список
     func save(_ task: Task, to taskList: TaskList) {
         write {
-            taskList.tasks.append(task)
+            taskList.tasks.append(task) //список в который необходимо добавить задачу
         }
     }
     

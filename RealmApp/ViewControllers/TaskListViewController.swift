@@ -11,20 +11,22 @@ import UIKit
 
 class TaskListViewController: UITableViewController {
     
-    //var currentTasks: Results<Task>!
+    var currentTasks: Results<Task>!
     
     private var taskLists: Results<TaskList>! // Results - результаты коллекции TaskList
+    //var taskList: TaskList!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         createTempData() // заполняем примерами при первом запуске приложения
         taskLists = StorageManager.shared.realm.objects(TaskList.self) //делаем запрос из базы данных realm, и ищем объекты с типом TaskList
         
-       // currentTasks = StorageManager.shared.realm.objects(Task.self)
+        //currentTasks = StorageManager.shared.realm.objects(Task.self)
+        //currentTasks = taskList.tasks.filter("isComplete = false")
         
-        navigationItem.leftBarButtonItem = editButtonItem
+        navigationItem.leftBarButtonItem = editButtonItem // кнопка редактирования
     }
-    
+    // обновляем экран
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tableView.reloadData()
@@ -48,15 +50,18 @@ class TaskListViewController: UITableViewController {
     }
     
     // MARK: - UITableViewDelegate
+    // настраиваем свайп по строчке
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
         let taskList = taskLists[indexPath.row]
         
+        //настраиваем удаление: destructive - красный тип кнопки, название Delete
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { _, _, _ in
-            StorageManager.shared.delete(taskList)
-            tableView.deleteRows(at: [indexPath], with: .automatic)
+            StorageManager.shared.delete(taskList) //вызываем метод удаления из базы
+            tableView.deleteRows(at: [indexPath], with: .automatic) //удаляем строчку
         }
         
+        //настраиваем метод редактирования, последний объект ({_, _, isDone} - определяем в каком момент заканчиваем работу над пользовательским действием ячейки
         let editAction = UIContextualAction(style: .normal, title: "Edit") { _, _, isDone in
             self.showAlert(with: taskList) {
                 tableView.reloadRows(at: [indexPath], with: .automatic)
@@ -70,6 +75,7 @@ class TaskListViewController: UITableViewController {
             isDone(true)
         }
         
+        //красим кнопку редактирования в оранжевый
         editAction.backgroundColor = .orange
         doneAction.backgroundColor = #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
         
@@ -79,8 +85,8 @@ class TaskListViewController: UITableViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         guard let indexPath = tableView.indexPathForSelectedRow else { return } //индекс строки на которую пользователь тапает
         guard let tasksVC = segue.destination as? TasksViewController else { return } // экземпляр вьюконтроллера на который переходим
-        let taskList = taskLists[indexPath.row]
-        tasksVC.taskList = taskList
+        let taskList = taskLists[indexPath.row] // извлекаем из массива список по текущей строки
+        tasksVC.taskList = taskList // передаем список на другой экран
     }
 
     @IBAction func  addButtonPressed(_ sender: Any) {
@@ -105,10 +111,14 @@ extension TaskListViewController {
         let alert = AlertController.createAlert(withTitle: "New List", andMessage: "Please insert new value")
         
         alert.action(with: taskList) { newValue in
+            //если получилось извлечь taskList и completion
             if let taskList = taskList, let completion = completion {
+                // то вызываем метод редактирования и передаем новое значение
                 StorageManager.shared.edit(taskList, newValue: newValue)
+                //вызываем completion, чтобы реализовать обновление интерфейса
                 completion()
             } else {
+                // иначе сохранение
                 self.save(newValue)
             }
         }
@@ -117,10 +127,10 @@ extension TaskListViewController {
     }
     
     private func save(_ taskList: String) {
-        let taskList = TaskList(value: [taskList])
-        StorageManager.shared.save(taskList)
-        let rowIndex = IndexPath(row: taskLists.index(of: taskList) ?? 0, section: 0)
-        tableView.insertRows(at: [rowIndex], with: .automatic)
+        let taskList = TaskList(value: [taskList]) //создаем экземпляр модели TaskList
+        StorageManager.shared.save(taskList) // теперь сохраняем этот экземпляр в базе
+        let rowIndex = IndexPath(row: taskLists.index(of: taskList) ?? 0, section: 0) //индекс по корому  нужно добавить строку
+        tableView.insertRows(at: [rowIndex], with: .automatic) //добавляем строку с автоматической анимацией
     }
     
 }

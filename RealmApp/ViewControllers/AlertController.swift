@@ -8,6 +8,7 @@
 
 import UIKit
 
+//делаем через класс, потому что расширения не могут определять свойства класса
 class AlertController: UIAlertController {
     var doneButton = "Save"
     
